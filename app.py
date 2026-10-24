@@ -19,6 +19,7 @@ import streamlit as st
 # =============================================================================
 INTEGRANTES = ["Luciana Giraldo Botero", "Mariana Giraldo Gil "]
 CURSO = "Ingeniería Financiera  |  Docente: Adriana Arango L.  |  UPB"
+FECHA_CONSULTA = "24 de octubre de 2026"
 
 
 st.set_page_config(page_title="Tablero de Ingeniería Financiera", layout="wide",

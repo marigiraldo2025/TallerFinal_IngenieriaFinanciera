@@ -17,9 +17,9 @@ import streamlit as st
 # =============================================================================
 # CONFIGURACION GENERAL (editar aqui los nombres del equipo)
 # =============================================================================
-INTEGRANTES = ["Integrante 1", "Integrante 2", "Integrante 3"]
+INTEGRANTES = ["Luciana Giraldo Botero", "Mariana Giraldo Gil "]
 CURSO = "Ingeniería Financiera  |  Docente: Adriana Arango L.  |  UPB"
-FECHA_CONSULTA = "24 de octubre de 2026"
+
 
 st.set_page_config(page_title="Tablero de Ingeniería Financiera", layout="wide",
                    initial_sidebar_state="collapsed")
@@ -112,7 +112,11 @@ def pct(x, dec=2):
 def num(x, dec=2):
     return f"{x:,.{dec}f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
-
+# Periodicidades para interés simple (periodos por año; la diaria usa la convención de días)
+UNIDADES_SIMPLE = {"Diaria": None, "Mensual": 12, "Bimestral": 6, "Trimestral": 4,
+                   "Cuatrimestral": 3, "Semestral": 2, "Anual": 1}
+PLAZO_SIMPLE = {"Días": None, "Meses": 12, "Bimestres": 6, "Trimestres": 4,
+                "Cuatrimestres": 3, "Semestres": 2, "Años": 1}
 def estilo(fig, titulo, xt="", yt="", h=390, leyenda=True):
     fig.update_layout(
         title=dict(text=titulo, font=dict(size=15, color=AZ_MARINO)),
@@ -604,16 +608,19 @@ with TABS[1]:
         seccion("Parámetros de entrada")
         P = st.number_input("Capital inicial P (COP)", min_value=0, value=5_000_000, step=500_000, key="s_P")
         tasa = st.slider("Tasa de interés (%)", 0.0, 40.0, 12.0, 0.1, key="s_i") / 100
-        unidad_t = st.selectbox("La tasa es", ["Anual", "Mensual", "Diaria"], key="s_ut")
+        unidad_t = st.selectbox("Periodicidad de la tasa", list(UNIDADES_SIMPLE), index=6, key="s_ut")
         plazo = st.number_input("Plazo", min_value=1, value=180, step=1, key="s_n")
-        unidad_n = st.selectbox("Unidad del plazo", ["Días", "Meses", "Años"], key="s_un")
+        unidad_n = st.selectbox("Unidad del plazo", list(PLAZO_SIMPLE), index=0, key="s_un")
         conv = st.radio("Convención de días", ["Comercial (año de 360 días)", "Real (año de 365 días)"],
                         key="s_conv")
         base = 360 if conv.startswith("Comercial") else 365
         F_obj = st.number_input("Valor futuro objetivo para despejes y valor presente (COP)", min_value=0,
                                 value=5_500_000, step=100_000, key="s_F")
-    i_anual = tasa if unidad_t == "Anual" else (tasa * 12 if unidad_t == "Mensual" else tasa * base)
-    t_anios = plazo / base if unidad_n == "Días" else (plazo / 12 if unidad_n == "Meses" else plazo)
+        # En interés simple las tasas son proporcionales: i_anual = i_periodo * (periodos por año)
+    m_tasa = base if unidad_t == "Diaria" else UNIDADES_SIMPLE[unidad_t]
+    m_plazo = base if unidad_n == "Días" else PLAZO_SIMPLE[unidad_n]
+    i_anual = tasa * m_tasa
+    t_anios = plazo / m_plazo
     I = P * i_anual * t_anios
     F = P + I
     VP = F_obj / (1 + i_anual * t_anios)
@@ -623,6 +630,8 @@ with TABS[1]:
         seccion("Fórmulas")
         st.latex(r"I = P\cdot i\cdot t \qquad F = P\,(1+i\,t) \qquad P=\frac{F}{1+i\,t}")
         st.latex(r"i=\frac{F/P-1}{t}\qquad t=\frac{F/P-1}{i}\qquad t_{años}=\frac{días}{360\ \text{o}\ 365}")
+        st.latex(r"i_{anual}=i_{periodo}\cdot m\qquad t_{años}=\frac{\text{plazo}}{m}"
+                 r"\qquad m=12,\,6,\,4,\,3,\,2,\,1\ \text{(mensual a anual)}")
         seccion("Resultados")
         fila_kpis([("Interés", cop(I), f"tasa anual equivalente {pct(i_anual)}"),
                    ("Valor futuro F", cop(F), f"t = {num(t_anios, 4)} años"),
